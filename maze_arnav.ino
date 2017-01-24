@@ -5,6 +5,8 @@ int m1b=3;
 int m2a=5;
 int m2b=6;
 
+int ir=0;
+
 //left
 int lt=30;
 int le=31;
@@ -14,6 +16,11 @@ int fe=35;
 //right
 int rt=38;
 int re=39;
+
+String sol="";
+String cx="";
+int btn;
+int i;
 
 float l;
 float m;
@@ -27,20 +34,21 @@ void setup()
   pinMode(lt,OUTPUT);
   pinMode(le,INPUT);
   pinMode(ft,OUTPUT);
-  pinMode(fe,INPUT);
+  pinMode(fe,INPUT); 
   pinMode(rt,OUTPUT);
   pinMode(re,INPUT);
-
+  btn=digitalRead(52);
   pinMode(m1a,OUTPUT); 
   pinMode(m1b,OUTPUT);
   pinMode(m2a,OUTPUT);
   pinMode(m2b,OUTPUT);
-  
+
+  pinMode(53,INPUT);
 }
 void loop()
 {
   l=leng(lt,le);
-  Serial.print("L=");
+  Serial.print("\nL=");
   Serial.println(l);
   m=leng(ft,fe);
   Serial.print("M=");
@@ -48,9 +56,84 @@ void loop()
   r=leng(rt,re);
   Serial.print("R=");
   Serial.println(r);
+  ir=digitalRead(53);
+  btn=digitalRead(52);
+  if(ir==1)
+  {
+   solve();
+   digitalWrite(m2a, LOW);
+    digitalWrite(m2b, LOW);
+    digitalWrite(m1a, LOW);
+    digitalWrite(m1b, LOW);
+   while(btn==0)
+   {
+    btn=digitalRead(52);
+    }   
+  }
+  if(btn==1){
+   i=0;
+   if(m>3)//Dead end
+   {
+    pid();
+   }
+   else
+   {
+    switch(sol[i])
+    {
+      case 'L':
+        left();
+        break;
+      case 'R':
+        right();
+        break;
+      case 'S':
+        fwd();
+        delay(200);
+    }
+    i++;
+   }
+  }
+  else
+  {
   if(m>3)//Dead end
   {
-    if(l>r)
+    pid();
+  }
+  else
+  {
+    if(l>10)
+    {
+      left();
+      Serial.println("Left");
+    }
+    else if(r>10)
+    {
+      right();
+      Serial.println("Right");
+    }
+    else
+    {
+      uturn();
+      Serial.println("U-Turn");
+    }
+  }
+  }
+  
+}
+
+void left()
+{
+    cx='L';
+    digitalWrite(m2a, HIGH);
+    digitalWrite(m2b, LOW);
+    digitalWrite(m1a, LOW);
+    digitalWrite(m1b, HIGH);
+    delay(150);
+    fwd();
+}
+
+void pid(){
+  if(l>r)
     {
       lx--;
       rx++;
@@ -79,39 +162,11 @@ void loop()
     analogWrite(m2a,rx);    
     analogWrite(m1b,0);
     analogWrite(m2b,0);
-  }
-  else
-  {
-    if(l>10)
-    {
-      left();
-      Serial.println("Left");
-    }
-    else if(r>10)
-    {
-      right();
-      Serial.println("Right");
-    }
-    else
-    {
-      uturn();
-      Serial.println("U-Turn");
-    }
-  }
-}
-
-void left()
-{
-    digitalWrite(m2a, HIGH);
-    digitalWrite(m2b, LOW);
-    digitalWrite(m1a, LOW);
-    digitalWrite(m1b, HIGH);
-    delay(150);
-    fwd();
 }
 
 void right()
 {
+    cx='R';
     digitalWrite(m1a, HIGH);
     digitalWrite(m1b, LOW);
     digitalWrite(m2a, LOW);
@@ -122,6 +177,7 @@ void right()
 
 void uturn()
 {
+    cx='B';
     digitalWrite(m1a, HIGH);
     digitalWrite(m1b, LOW);
     digitalWrite(m2a, LOW);
@@ -132,6 +188,7 @@ void uturn()
 
 void fwd()
 {
+    sol+=cx;
     digitalWrite(m1a, HIGH);
     digitalWrite(m1b, LOW);
     digitalWrite(m2a, HIGH);
@@ -161,4 +218,18 @@ float leng(int t,int e)
 
   
   return dist;
+}
+
+void solve()
+{
+  String a=sol;
+  while(sol!=a){
+  a=sol;
+  sol.replace("LBR","B");
+  sol.replace("LBS","R");
+  sol.replace("LBL","S");
+  sol.replace("SBL","R");
+  sol.replace("SBS","B");
+  sol.replace("RBL","B");
+  }
 }
